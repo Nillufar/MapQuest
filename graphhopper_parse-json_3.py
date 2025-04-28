@@ -1,10 +1,19 @@
 import requests
 import urllib.parse
 
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
 route_url = "https://graphhopper.com/api/1/route?"
 loc1 = "Washington, D.C."
 loc2 = "Baltimore, Maryland"
-key = "782b0f3a-e8f8-4d61-aec5-6761d5545b98"
+# key = "782b0f3a-e8f8-4d61-aec5-6761d5545b98"
+
+key = os.getenv("GRAPHHOPPER_API_KEY")
+
+print("GraphHopper API Key: " + key)
 
 def geocoding (location, key):
     geocode_url = "https://graphhopper.com/api/1/geocode?"
