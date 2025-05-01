@@ -2,6 +2,11 @@ import os
 import urllib.parse
 import requests
 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 # Set your GraphHopper API key (or use an environment variable)
 key = os.getenv("GRAPHHOPPER_API_KEY")
 if not key:

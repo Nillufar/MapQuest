@@ -47,6 +47,6 @@
 5. **Run the application**  
     Start the application:  
     ```bash
-    python graphhopper_parse-json_3.py
+    python graphhopper_parse-json.py
     ```
 
