@@ -76,13 +76,21 @@ def generate_ai_tip(orig, dest, km, miles, hr, min, vehicle):
 # Navigation prompt enrich
 def enrich_instruction(text, dist):
     if not GEMINI_AVAILABLE:
-        return text + f" (distance: {dist/1000:.1f} km)"
-    prompt = f"Rephrase the navigation step: '{text}' to make it more helpful and natural. Distance is {dist/1000:.1f} km."
+        return text + f" ({dist/1000:.1f} km)"
+
+    prompt = (
+    f"Rewrite this direction in more human-friendly language."
+    f"If none fits, just keep it simple. '{text}' ({dist/1000:.1f} km). Max 10 words. "
+    f"Example: 'Turn left at the traffic light' → 'Turn left at Starbucks'."
+    )
+
+
     try:
         response = model.generate_content(prompt)
         return response.text.strip()
     except:
-        return text + f" (distance: {dist/1000:.1f} km)"
+        return text + f" ({dist/1000:.1f} km)"
+
 
 # Emoji for transport
 vehicle_emojis = {
