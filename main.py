@@ -4,29 +4,28 @@ import requests
 from datetime import datetime
 from dotenv import load_dotenv
 
-try:
-    import google.generativeai as genai
-    GEMINI_AVAILABLE = True
-except ImportError:
-    GEMINI_AVAILABLE = False
+import google.generativeai as genai
 
-# Load environment variables
+from src.tts.google_tts import text_to_speech, play_audio
+
 load_dotenv()
 
 # API Keys
 key = os.getenv("GRAPHHOPPER_API_KEY")
-gemini_key = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+if not GEMINI_API_KEY:
+    print("Gemini API key missing!")
+    exit(1)
 
 if not key:
     print("GraphHopper API key missing!")
     exit(1)
 
 # Configure Gemini if available
-if GEMINI_AVAILABLE and gemini_key:
-    genai.configure(api_key=gemini_key)
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
     model = genai.GenerativeModel("gemini-1.5-flash")
-else:
-    GEMINI_AVAILABLE = False
 
 # Allowed modes
 valid_modes = ['car', 'foot', 'bike', 'hike']
@@ -48,9 +47,6 @@ def detect_sharp_turn(curr, nxt):
 
 # AI Smart Tip
 def generate_ai_tip(orig, dest, km, miles, hr, min, vehicle):
-    if not GEMINI_AVAILABLE:
-        return "Gemini AI not available."
-
     now = datetime.now()
     context = {
         "from": orig['name'],
@@ -79,9 +75,6 @@ def generate_ai_tip(orig, dest, km, miles, hr, min, vehicle):
 
 # Navigation prompt enrich
 def enrich_instruction(text, dist):
-    if not GEMINI_AVAILABLE:
-        return text + f" ({dist/1000:.1f} km)"
-
     prompt = (
     f"Rewrite this direction in more human-friendly language."
     f"If none fits, just keep it simple. '{text}' ({dist/1000:.1f} km). Max 10 words. "
@@ -160,7 +153,11 @@ while True:
                 sharp_turn = detect_sharp_turn(step, next_step)
                 enriched = enrich_instruction(step["text"], step["distance"])
                 prefix = sharp_turn + ": " if sharp_turn else "➡️ "
-                print(f"{prefix}{enriched}")
+                direction = f"{prefix}{enriched}"
+                print(direction)
+                text_to_speech(direction, output_file="output.mp3")
+                play_audio("output.mp3")
+              
                 print("=============================================")
 
             print("=================================================")
