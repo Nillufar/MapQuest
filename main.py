@@ -168,6 +168,10 @@ while True:
                 
                 prefix = sharp_turn + ": " if sharp_turn else direction_emoji
                 print(f"{prefix}{enriched}")
+
+                text_to_speech(f'{enriched}')
+                play_audio("output.mp3")
+                
                 print("=" * 45)  # Separator line
 
             print("=================================================")
