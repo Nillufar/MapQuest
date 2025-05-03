@@ -159,9 +159,23 @@ while True:
                 next_step = instructions[i+1] if i+1 < len(instructions) else None
                 sharp_turn = detect_sharp_turn(step, next_step)
                 enriched = enrich_instruction(step["text"], step["distance"])
-                prefix = sharp_turn + ": " if sharp_turn else "➡️ "
+                
+                # Determine emoji based on instruction text
+                text_lower = step["text"].lower()
+                if "arrive" in text_lower or "destination" in text_lower:
+                    direction_emoji = "🏁 "  # Finish flag for arrival
+                elif "left" in text_lower:
+                    direction_emoji = "⬅️ "  # Left arrow
+                elif "right" in text_lower:
+                    direction_emoji = "➡️ "  # Right arrow
+                elif "straight" in text_lower or "continue" in text_lower:
+                    direction_emoji = "⬆️ "  # Up arrow (for straight/continue)
+                else:
+                    direction_emoji = "➡️ "  # Default (fallback)
+                
+                prefix = sharp_turn + ": " if sharp_turn else direction_emoji
                 print(f"{prefix}{enriched}")
-                print("=============================================")
+                print("=" * 45)  # Separator line
 
             print("=================================================")
             print(f"Distance Traveled: {miles:.1f} miles / {km:.1f} km")
