@@ -3,3 +3,5 @@ myenv/
 .env
 
 __pycache__/
+
+*.mp3
