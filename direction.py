@@ -1,36 +1,40 @@
 import os
 import urllib.parse
 import requests
-
+import google.generativeai as genai
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load environment variables
 load_dotenv()
 
-# Set your GraphHopper API key (or use an environment variable)
+# API Keys
 key = os.getenv("GRAPHHOPPER_API_KEY")
-if not key:
-    print("API Key is missing!")
+gemini_key = os.getenv("GEMINI_API_KEY")
+
+if not key or not gemini_key:
+    print("API keys missing!")
     exit(1)
 
-# Allowed transportation modes
+# Initialize Gemini
+genai.configure(api_key=gemini_key)
+model = genai.GenerativeModel("gemini-pro")
+
+# Transportation modes
 valid_modes = ['car', 'foot', 'bike', 'hike']
 
 while True:
     user_mode = input("Enter mode of transport (car, foot, bike, hike): ").strip().lower()
+    vehicle = user_mode if user_mode in valid_modes else "car"
     if user_mode not in valid_modes:
         print("Invalid or empty input. Defaulting to 'car'.")
-        vehicle = "car"
-    else:
-        vehicle = user_mode
+    
     start_city = input("Starting Location: ")
     end_city = input("Destination: ")
 
-    # Use GraphHopper's geocoding API to get coordinates
-    geocode_url = "https://graphhopper.com/api/1/geocode"
-    start_url = f"{geocode_url}?q={urllib.parse.quote(start_city)}&limit=1&key={key}"
-    end_url = f"{geocode_url}?q={urllib.parse.quote(end_city)}&limit=1&key={key}"
-
+    # Geocoding
+    geo_url = "https://graphhopper.com/api/1/geocode"
+    start_url = f"{geo_url}?q={urllib.parse.quote(start_city)}&limit=1&key={key}"
+    end_url = f"{geo_url}?q={urllib.parse.quote(end_city)}&limit=1&key={key}"
     start_data = requests.get(start_url).json()
     end_data = requests.get(end_url).json()
 
@@ -40,7 +44,7 @@ while True:
         orig_coords = orig["point"]
         dest_coords = dest["point"]
 
-        # Build routing URL with selected vehicle
+        # Routing
         op = f"&point={orig_coords['lat']}%2C{orig_coords['lng']}"
         dp = f"&point={dest_coords['lat']}%2C{dest_coords['lng']}"
         base_url = "https://graphhopper.com/api/1/route?"
@@ -72,13 +76,26 @@ while True:
             for step in paths_data["paths"][0]["instructions"]:
                 sign = step.get("sign")
                 dist = step["distance"]
-                phrase = direction_map.get(sign, step["text"])
-                print(f"{phrase} and go for {dist/1000:.1f} km ({dist/1000/1.61:.1f} miles).")
+                raw_instruction = direction_map.get(sign, step["text"])
+                prompt = (
+                    f"Rephrase the navigation step: '{step['text']}' "
+                    f"to make it more helpful and natural. "
+                    f"Add a famous nearby landmark if relevant. "
+                    f"Distance is {dist/1000:.1f} km."
+                )
+
+                try:
+                    gemini_response = model.generate_content(prompt)
+                    enriched_instruction = gemini_response.text.strip()
+                except Exception as e:
+                    enriched_instruction = raw_instruction + f" and go for {dist/1000:.1f} km."
+
+                print(f"{enriched_instruction}")
                 print("=============================================")
 
-            # Calculate total distance and duration
+            # Summary
             total_distance = paths_data["paths"][0]["distance"]
-            total_time = paths_data["paths"][0]["time"]  # in milliseconds
+            total_time = paths_data["paths"][0]["time"]  # ms 
             miles = total_distance / 1000 / 1.61
             km = total_distance / 1000
             seconds = total_time // 1000
@@ -94,10 +111,8 @@ while True:
 
         else:
             print("*************************************************")
-            print("GraphHopper Routing API failed to return a valid route.")
-            print("Error message: " + paths_data.get("message", "Unknown error"))
+            print("GraphHopper Routing API failed.")
+            print("Message: " + paths_data.get("message", "Unknown error"))
             print("*************************************************")
-            print("Please enter valid locations again.\n")
-
     else:
-        print("One or both locations could not be found. Try again.\n")
+        print("Invalid locations. Try again.\n")
