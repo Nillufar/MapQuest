@@ -65,7 +65,11 @@ def generate_ai_tip(orig, dest, km, miles, hr, min, vehicle):
 
     prompt = f"""Generate ONE practical tip for this trip in under 15 words:
     {context}
-    Format: "[Emoji] [Tip]" """
+    Format: "[Emoji] [Tip]"
+         Examples:
+         "⛽ Fuel up before rural stretch"
+         "🚦 Avoid downtown until 19:00"
+         "⚠️ 2 sharp turns next 5km" """
 
     try:
         response = model.generate_content(prompt)
